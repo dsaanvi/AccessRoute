@@ -1,5 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap');
 
+
+/* =========================
+   GLOBAL
+========================= */
+
 * {
   box-sizing: border-box;
 }
@@ -7,21 +12,20 @@
 :root {
   font-family: 'DM Sans', sans-serif;
 
-  --navy: #0f172a;
-  --navy-2: #1e293b;
+  --navy: #102a25;
+  --navy-2: #243d37;
 
-  --blue: #2563eb;
-  --blue-hover: #1d4ed8;
+  --green: #0f8a6a;
+  --green-hover: #08735a;
+  --light-green: #ddf5ec;
 
-  --sky: #dbeafe;
-
-  --background: #f8fafc;
+  --background: #f6faf8;
   --panel: #ffffff;
 
-  --text: #0f172a;
-  --muted: #64748b;
+  --text: #102a25;
+  --muted: #687b75;
 
-  --border: #dbe3ee;
+  --border: #dce7e3;
 }
 
 body {
@@ -31,11 +35,11 @@ body {
 
   background:
     radial-gradient(circle at 15% 20%,
-      rgba(37, 99, 235, 0.10),
-      transparent 30%),
+      rgba(15, 138, 106, 0.09),
+      transparent 32%),
     linear-gradient(135deg,
-      #f8fafc 0%,
-      #eef4ff 100%);
+      #f8fbfa 0%,
+      #eef8f4 100%);
 
   color: var(--text);
 }
@@ -44,6 +48,11 @@ button,
 input {
   font: inherit;
 }
+
+
+/* =========================
+   MAIN LAYOUT
+========================= */
 
 .app-shell {
   min-height: 100vh;
@@ -57,6 +66,7 @@ input {
   background: transparent;
 }
 
+
 /* =========================
    LEFT SIDE
 ========================= */
@@ -68,6 +78,7 @@ input {
   flex-direction: column;
   justify-content: space-between;
 }
+
 
 /* LOGO */
 
@@ -112,11 +123,32 @@ input {
   color: var(--muted);
 }
 
-/* MAIN HERO */
+
+/* =========================
+   HERO
+========================= */
 
 .intro {
   max-width: 650px;
   margin: 80px 0 60px;
+}
+
+.hero-brand {
+  margin-bottom: 22px;
+
+  font-family: 'Manrope', sans-serif;
+
+  font-size: clamp(54px, 6vw, 88px);
+  font-weight: 800;
+
+  letter-spacing: -4px;
+  line-height: 1;
+
+  color: var(--navy);
+}
+
+.hero-brand span {
+  color: var(--green);
 }
 
 .eyebrow,
@@ -127,7 +159,7 @@ input {
   font-weight: 700;
   letter-spacing: 1.8px;
 
-  color: var(--blue);
+  color: var(--green);
 }
 
 .intro h2 {
@@ -146,9 +178,7 @@ input {
 }
 
 .intro h2 span {
-  display: inline;
-
-  color: var(--blue);
+  color: var(--green);
 }
 
 .intro>p {
@@ -163,24 +193,10 @@ input {
   font-size: 17px;
 }
 
-.hero-brand {
-  margin-bottom: 22px;
 
-  font-family: 'Manrope', sans-serif;
-  font-size: clamp(54px, 6vw, 88px);
-  font-weight: 800;
-
-  letter-spacing: -4px;
-  line-height: 1;
-
-  color: var(--navy);
-}
-
-.hero-brand span {
-  color: var(--blue);
-}
-
-/* FEATURES */
+/* =========================
+   FEATURES
+========================= */
 
 .feature-list {
   display: grid;
@@ -198,7 +214,7 @@ input {
 .feature>span {
   min-width: 28px;
 
-  color: var(--blue);
+  color: var(--green);
 
   font-size: 12px;
   font-weight: 700;
@@ -222,6 +238,7 @@ input {
   line-height: 1.5;
 }
 
+
 /* =========================
    RIGHT SIDE
 ========================= */
@@ -240,7 +257,6 @@ input {
   background: rgba(255, 255, 255, 0.95);
 
   border: 1px solid var(--border);
-
   border-radius: 26px;
 
   padding: 38px;
@@ -251,6 +267,7 @@ input {
 
   backdrop-filter: blur(10px);
 }
+
 
 /* FORM HEADING */
 
@@ -271,7 +288,10 @@ input {
   color: var(--navy);
 }
 
-/* LOCATION INPUTS */
+
+/* =========================
+   LOCATION INPUTS
+========================= */
 
 .location-group {
   margin-bottom: 14px;
@@ -296,7 +316,6 @@ input {
   gap: 13px;
 
   border: 1px solid #cbd5e1;
-
   border-radius: 14px;
 
   background: #ffffff;
@@ -311,10 +330,10 @@ input {
 }
 
 .input-wrap:focus-within {
-  border-color: var(--blue);
+  border-color: var(--green);
 
   box-shadow:
-    0 0 0 4px rgba(37, 99, 235, 0.12);
+    0 0 0 4px rgba(15, 138, 106, 0.12);
 }
 
 .input-wrap input {
@@ -334,6 +353,9 @@ input {
   color: #94a3b8;
 }
 
+
+/* START / END DOTS */
+
 .dot {
   width: 10px;
   height: 10px;
@@ -344,7 +366,7 @@ input {
 }
 
 .start-dot {
-  background: var(--blue);
+  background: var(--green);
 }
 
 .end-dot {
@@ -360,7 +382,10 @@ input {
   background: #cbd5e1;
 }
 
-/* PREFERENCES */
+
+/* =========================
+   PREFERENCES
+========================= */
 
 .preferences-header {
   margin-top: 32px;
@@ -391,6 +416,7 @@ input {
 .preferences-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
+
   gap: 10px;
 }
 
@@ -414,9 +440,9 @@ input {
 }
 
 .preference-card:hover {
-  background: #eff6ff;
+  background: #f0faf6;
 
-  border-color: #93c5fd;
+  border-color: #8bcdb9;
 
   transform: translateY(-1px);
 }
@@ -425,7 +451,9 @@ input {
   width: 18px;
   height: 18px;
 
-  accent-color: var(--blue);
+  accent-color: var(--green);
+
+  cursor: pointer;
 }
 
 .preference-card strong {
@@ -436,7 +464,6 @@ input {
 
   color: var(--navy);
 }
-
 
 .preference-icon {
   width: 32px;
@@ -450,8 +477,8 @@ input {
 
   border-radius: 9px;
 
-  background: #eff6ff;
-  color: var(--blue);
+  background: var(--light-green);
+  color: var(--green);
 
   font-size: 16px;
   font-weight: 700;
@@ -461,20 +488,16 @@ input {
   min-width: 0;
 }
 
-@media (max-width: 620px) {
-  .preferences-grid {
-    grid-template-columns: 1fr;
-  }
-}
 
-/* BUTTON */
+/* =========================
+   BUTTON
+========================= */
 
 .primary-button {
   width: 100%;
   height: 58px;
 
   margin-top: 24px;
-
   padding: 0 20px;
 
   border: none;
@@ -482,8 +505,8 @@ input {
 
   background:
     linear-gradient(135deg,
-      #2563eb,
-      #1d4ed8);
+      var(--green),
+      var(--green-hover));
 
   color: white;
 
@@ -499,14 +522,19 @@ input {
   transition: all 0.2s ease;
 
   box-shadow:
-    0 10px 25px rgba(37, 99, 235, 0.25);
+    0 10px 25px rgba(15, 138, 106, 0.22);
 }
 
 .primary-button:hover {
+  background:
+    linear-gradient(135deg,
+      #0d7d61,
+      #065f4b);
+
   transform: translateY(-2px);
 
   box-shadow:
-    0 14px 30px rgba(37, 99, 235, 0.35);
+    0 14px 30px rgba(15, 138, 106, 0.30);
 }
 
 .primary-button:active {
@@ -517,7 +545,10 @@ input {
   font-size: 20px;
 }
 
-/* DISCLAIMER */
+
+/* =========================
+   DISCLAIMER
+========================= */
 
 .disclaimer {
   margin: 14px 0 0;
@@ -529,11 +560,78 @@ input {
   font-size: 11px;
 }
 
+
 /* =========================
-   RESPONSIVE
+   MAP SECTION
+========================= */
+
+.map-section {
+  max-width: 1500px;
+
+  margin: 0 auto;
+
+  padding: 20px 70px 70px;
+}
+
+.map-container {
+  background: #ffffff;
+
+  border: 1px solid var(--border);
+  border-radius: 24px;
+
+  padding: 24px;
+
+  box-shadow:
+    0 20px 60px rgba(16, 42, 37, 0.08);
+}
+
+.map-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 20px;
+}
+
+.map-header h3 {
+  margin: 6px 0 0;
+
+  font-family: 'Manrope', sans-serif;
+
+  font-size: 24px;
+  font-weight: 800;
+
+  color: var(--navy);
+}
+
+.map-status {
+  padding: 7px 12px;
+
+  border-radius: 999px;
+
+  background: var(--light-green);
+  color: var(--green);
+
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.access-map {
+  width: 100%;
+  height: 500px;
+
+  border-radius: 17px;
+
+  overflow: hidden;
+}
+
+
+/* =========================
+   TABLET
 ========================= */
 
 @media (max-width: 1000px) {
+
   .app-shell {
     grid-template-columns: 1fr;
   }
@@ -549,9 +647,19 @@ input {
   .planner-panel {
     padding: 0 24px 40px;
   }
+
+  .map-section {
+    padding: 20px 24px 50px;
+  }
 }
 
+
+/* =========================
+   MOBILE
+========================= */
+
 @media (max-width: 620px) {
+
   .left-panel {
     padding: 26px 18px;
   }
@@ -566,6 +674,12 @@ input {
     border-radius: 20px;
   }
 
+  .hero-brand {
+    font-size: 52px;
+
+    letter-spacing: -3px;
+  }
+
   .intro h2 {
     font-size: 48px;
 
@@ -574,5 +688,34 @@ input {
 
   .intro>p {
     font-size: 15px;
+  }
+
+  .preferences-grid {
+    grid-template-columns: 1fr;
+  }
+
+
+  /* MAP ON MOBILE */
+
+  .map-section {
+    padding: 10px 14px 30px;
+  }
+
+  .map-container {
+    padding: 14px;
+
+    border-radius: 18px;
+  }
+
+  .map-header {
+    align-items: flex-start;
+
+    gap: 15px;
+  }
+
+  .access-map {
+    height: 400px;
+
+    border-radius: 13px;
   }
 }

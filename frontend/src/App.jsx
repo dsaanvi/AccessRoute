@@ -1,7 +1,9 @@
 import './App.css'
+import AccessMap from './components/AccessMap'
 
 function App() {
   return (
+    <>
     <main className="app-shell">
       <section className="left-panel">
 
@@ -253,6 +255,10 @@ function App() {
       </section>
 
     </main>
+    <section className="map-section">
+      <AccessMap />
+    </section>
+    </>
   )
 }
 
