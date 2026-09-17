@@ -1,8 +1,5 @@
 # AccessRoute
 
-
-**Active development**
-
 > Accessibility-first pedestrian navigation that finds routes based on a user's mobility needs, not just the shortest distance.
 
 ## Overview
@@ -168,6 +165,16 @@ Route is displayed on the interactive map
 
 
 For example, two routes may have different trade-offs:
+
+## Current frontend visualisation
+
+
+<img width="745" height="455" alt="image" src="https://github.com/user-attachments/assets/294d62c7-8acf-41e9-a3de-54121bad0b5f" />
+
+
+
+
+<img width="710" height="339" alt="image" src="https://github.com/user-attachments/assets/d89b4a0e-4171-450d-9c52-2ec3cb2a8bae" />
 
 
 ## Design Philosophy
