@@ -5,85 +5,70 @@ import {
   TileLayer,
   Marker,
   Popup,
+  Polyline,
   useMap,
 } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
-// Default map location: Melbourne
 const MELBOURNE = [-37.8136, 144.9631]
 
-// Custom starting point marker
-const startIcon = L.divIcon({
-  className: 'custom-map-marker',
-  html: `
-    <div style="
-      background:#86e7b1;
-      width:22px;
-      height:22px;
-      border:4px solid #173127;
-      border-radius:50%;
-      box-shadow:0 0 0 3px rgba(134,231,177,.25);
-    "></div>
-  `,
-  iconSize: [30, 30],
-  iconAnchor: [15, 15],
-})
+function createMarker(color) {
+  return L.divIcon({
+    className: 'custom-map-marker',
+    html: `
+      <div style="
+        width: 22px;
+        height: 22px;
+        background: ${color};
+        border: 4px solid #173127;
+        border-radius: 50%;
+        box-shadow: 0 0 0 3px rgba(134,231,177,0.25);
+        box-sizing: border-box;
+      "></div>
+    `,
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+  })
+}
 
-// Custom destination marker
-const destinationIcon = L.divIcon({
-  className: 'custom-map-marker',
-  html: `
-    <div style="
-      background:#ffffff;
-      width:22px;
-      height:22px;
-      border:4px solid #173127;
-      border-radius:50%;
-      box-shadow:0 0 0 3px rgba(255,255,255,.2);
-    "></div>
-  `,
-  iconSize: [30, 30],
-  iconAnchor: [15, 15],
-})
+const startIcon = createMarker('#86e7b1')
+const destinationIcon = createMarker('#ffffff')
 
-// Automatically adjust map view
 function MapViewController({
   startCoordinates,
   destinationCoordinates,
+  route,
 }) {
   const map = useMap()
 
   useEffect(() => {
-    if (startCoordinates && destinationCoordinates) {
-      // Show both selected locations
-      const bounds = L.latLngBounds([
-        startCoordinates,
-        destinationCoordinates,
-      ])
-
-      map.fitBounds(bounds, {
-        padding: [45, 45],
-        maxZoom: 15,
-        animate: true,
+    if (route?.coordinates?.length > 1) {
+      map.fitBounds(L.latLngBounds(route.coordinates), {
+        padding: [35, 35],
+        maxZoom: 16,
       })
-    } else if (startCoordinates) {
-      // Show starting point
-      map.flyTo(startCoordinates, 15, {
-        duration: 1,
-      })
-    } else if (destinationCoordinates) {
-      // Show destination
-      map.flyTo(destinationCoordinates, 15, {
-        duration: 1,
-      })
+    } else if (startCoordinates && destinationCoordinates) {
+      map.fitBounds(
+        L.latLngBounds([
+          startCoordinates,
+          destinationCoordinates,
+        ]),
+        {
+          padding: [35, 35],
+          maxZoom: 15,
+        }
+      )
+    } else if (startCoordinates || destinationCoordinates) {
+      map.flyTo(
+        startCoordinates || destinationCoordinates,
+        15,
+        { duration: 1 }
+      )
     } else {
-      // Return to Melbourne when no locations are selected
-      map.flyTo(MELBOURNE, 12, {
-        duration: 1,
-      })
+      map.flyTo(MELBOURNE, 12, { duration: 1 })
     }
-  }, [startCoordinates, destinationCoordinates, map])
+  }, [map, startCoordinates, destinationCoordinates, route])
 
   return null
 }
@@ -93,16 +78,14 @@ function AccessMap({
   destinationCoordinates,
   startName,
   destinationName,
+  route,
 }) {
   return (
     <MapContainer
       center={MELBOURNE}
       zoom={12}
       scrollWheelZoom={false}
-      style={{
-        height: '100%',
-        width: '100%',
-      }}
+      style={{ width: '100%', height: '100%' }}
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -112,13 +95,32 @@ function AccessMap({
       <MapViewController
         startCoordinates={startCoordinates}
         destinationCoordinates={destinationCoordinates}
+        route={route}
       />
 
+      {route?.coordinates?.length > 1 && (
+        <>
+          <Polyline
+            positions={route.coordinates}
+            pathOptions={{
+              color: '#173127',
+              weight: 10,
+              opacity: 0.8,
+            }}
+          />
+          <Polyline
+            positions={route.coordinates}
+            pathOptions={{
+              color: '#86e7b1',
+              weight: 5,
+              opacity: 1,
+            }}
+          />
+        </>
+      )}
+
       {startCoordinates && (
-        <Marker
-          position={startCoordinates}
-          icon={startIcon}
-        >
+        <Marker position={startCoordinates} icon={startIcon}>
           <Popup>
             <strong>Starting point</strong>
             <p>{startName || 'Selected starting point'}</p>

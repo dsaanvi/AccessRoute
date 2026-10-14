@@ -1,6 +1,5 @@
 
 import { useEffect, useRef, useState } from 'react'
-
 import {
   Accessibility,
   ArrowRight,
@@ -21,9 +20,9 @@ import {
 
 import AccessMap from './components/AccessMap'
 import { searchLocation } from './services/geocoding'
+import { calculateRoute } from './services/routing'
 import './App.css'
 
-// Custom stairs icon
 function StairsIcon({ size = 26 }) {
   return (
     <svg
@@ -43,7 +42,6 @@ function StairsIcon({ size = 26 }) {
   )
 }
 
-// Custom AccessRoute logo
 function AccessRouteLogo() {
   return (
     <svg
@@ -73,7 +71,6 @@ function AccessRouteLogo() {
   )
 }
 
-// Accessibility preferences
 const preferences = [
   {
     id: 'step-free',
@@ -102,7 +99,7 @@ const preferences = [
   },
 ]
 
-// Outside App so typing does not cause focus loss
+// Keep outside App to prevent the input losing focus.
 function LocationSearchField({
   type,
   label,
@@ -117,7 +114,6 @@ function LocationSearchField({
   onClearResults,
 }) {
   const isActive = activeSearch === type
-  const hasEnoughCharacters = value.trim().length >= 3
 
   return (
     <div className="location-search-group">
@@ -145,14 +141,14 @@ function LocationSearchField({
               isActive && (isSearching || results.length > 0)
             }
             onChange={(e) => onChange(e.target.value)}
-            onFocus={() => {
-              if (hasEnoughCharacters) {
-                onSearch(type, value)
-              }
-            }}
             onKeyDown={(e) => {
               if (e.key === 'Escape') {
                 onClearResults()
+              }
+
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                onSearch(type, value, true)
               }
             }}
           />
@@ -176,27 +172,25 @@ function LocationSearchField({
         </div>
       )}
 
-      {isActive &&
-        !isSearching &&
-        results.length > 0 && (
-          <div className="location-results">
-            {results.map((place, index) => (
-              <button
-                key={`${place.latitude}-${place.longitude}-${index}`}
-                type="button"
-                className="location-result"
-                onClick={() => onSelect(place, type)}
-              >
-                <MapPin size={16} />
-                <span>{place.name}</span>
-              </button>
-            ))}
-          </div>
-        )}
+      {isActive && !isSearching && results.length > 0 && (
+        <div className="location-results">
+          {results.map((place, index) => (
+            <button
+              key={`${place.latitude}-${place.longitude}-${index}`}
+              type="button"
+              className="location-result"
+              onClick={() => onSelect(place, type)}
+            >
+              <MapPin size={16} />
+              <span>{place.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {isActive &&
         !isSearching &&
-        hasEnoughCharacters &&
+        value.trim().length >= 3 &&
         results.length === 0 && (
           <div className="location-results" role="status">
             <p className="location-search-status">
@@ -219,51 +213,35 @@ function App() {
   const [message, setMessage] = useState('')
   const [menuOpen, setMenuOpen] = useState(false)
 
-  // Autocomplete search state
   const [searchResults, setSearchResults] = useState([])
   const [activeSearch, setActiveSearch] = useState(null)
   const [isSearching, setIsSearching] = useState(false)
 
-  // Selected location coordinates
   const [startCoordinates, setStartCoordinates] = useState(null)
-  const [destinationCoordinates, setDestinationCoordinates] = useState(null)
+  const [destinationCoordinates, setDestinationCoordinates] =
+    useState(null)
 
-  // Used to debounce and cancel searches
+  const [route, setRoute] = useState(null)
+  const [isRouting, setIsRouting] = useState(false)
+
   const searchController = useRef(null)
   const searchTimer = useRef(null)
   const searchVersion = useRef(0)
+  const routeController = useRef(null)
 
-  function cancelPendingSearch() {
-    searchVersion.current += 1
-
-    if (searchTimer.current) {
-      clearTimeout(searchTimer.current)
-      searchTimer.current = null
-    }
-
-    if (searchController.current) {
-      searchController.current.abort()
-      searchController.current = null
-    }
-  }
-
-  // Clean up when the component unmounts
   useEffect(() => {
     return () => {
-      if (searchTimer.current) {
-        clearTimeout(searchTimer.current)
-      }
-
+      clearTimeout(searchTimer.current)
       searchController.current?.abort()
+      routeController.current?.abort()
     }
   }, [])
 
-  function togglePreference(id) {
-    setSelectedPreferences((current) =>
-      current.includes(id)
-        ? current.filter((item) => item !== id)
-        : [...current, id]
-    )
+  function cancelPendingSearch() {
+    searchVersion.current += 1
+    clearTimeout(searchTimer.current)
+    searchController.current?.abort()
+    searchController.current = null
   }
 
   function clearSearchResults() {
@@ -273,7 +251,23 @@ function App() {
     setIsSearching(false)
   }
 
-  // Automatically called when the user types
+  function clearCurrentRoute() {
+    routeController.current?.abort()
+    routeController.current = null
+    setRoute(null)
+    setIsRouting(false)
+  }
+
+  function togglePreference(id) {
+    clearCurrentRoute()
+    setMessage("Preferences updated. Find a route to apply them.")
+    setSelectedPreferences((current) =>
+      current.includes(id)
+        ? current.filter((item) => item !== id)
+        : [...current, id]
+    )
+  }
+
   function handleLocationChange(type, value) {
     if (type === 'start') {
       setStartLocation(value)
@@ -283,22 +277,18 @@ function App() {
       setDestinationCoordinates(null)
     }
 
+    clearCurrentRoute()
     setMessage('')
-
-    // Start a new autocomplete search
     handleLocationSearch(type, value)
   }
 
-  // Automatic location search with debounce
   function handleLocationSearch(type, query, immediate = false) {
     cancelPendingSearch()
 
     const trimmedQuery = query.trim()
-
     setSearchResults([])
     setMessage('')
 
-    // Wait until at least 3 characters have been typed
     if (trimmedQuery.length < 3) {
       setActiveSearch(null)
       setIsSearching(false)
@@ -320,7 +310,6 @@ function App() {
           controller.signal
         )
 
-        // Ignore results from outdated requests
         if (
           controller.signal.aborted ||
           currentVersion !== searchVersion.current
@@ -338,8 +327,6 @@ function App() {
         }
 
         console.error('Location search error:', error)
-
-        setSearchResults([])
         setActiveSearch(null)
         setMessage(
           'Location suggestions are unavailable. Please try again.'
@@ -354,8 +341,6 @@ function App() {
       }
     }
 
-    // Search immediately when the icon is clicked,
-    // otherwise wait 350ms after typing stops
     if (immediate) {
       performSearch()
     } else {
@@ -364,8 +349,8 @@ function App() {
   }
 
   function selectLocation(place, type) {
-    // Cancel any searches still running
     clearSearchResults()
+    clearCurrentRoute()
 
     if (type === 'start') {
       setStartLocation(place.name)
@@ -384,7 +369,7 @@ function App() {
     setMessage('')
   }
 
-  function handleFindRoute() {
+  async function handleFindRoute() {
     clearSearchResults()
 
     if (!startCoordinates || !destinationCoordinates) {
@@ -394,22 +379,50 @@ function App() {
       return
     }
 
-    setMessage(
-      'Both locations are shown on the map. Accessible route calculation is coming next.'
-    )
+    clearCurrentRoute()
+
+    const controller = new AbortController()
+    routeController.current = controller
+
+    setIsRouting(true)
+    setMessage('Calculating your walking route...')
+
+    try {
+      const result = await calculateRoute(
+        startCoordinates,
+        destinationCoordinates,
+        selectedPreferences,
+        controller.signal
+      )
+
+      if (controller.signal.aborted) return
+
+      setRoute(result)
+      setMessage('')
+    } catch (error) {
+      if (controller.signal.aborted) return
+
+      console.error('Routing error:', error)
+      setMessage(
+        `Could not calculate route: ${error.message}`
+      )
+    } finally {
+      if (!controller.signal.aborted) {
+        setIsRouting(false)
+        routeController.current = null
+      }
+    }
   }
 
   function scrollToPlanner() {
     document.getElementById('route-planner')?.scrollIntoView({
       behavior: 'smooth',
     })
-
     setMenuOpen(false)
   }
 
   return (
     <div className="site-wrapper" id="home">
-      {/* Background circles */}
       <div className="background-orb background-orb-one" />
       <div className="background-orb background-orb-two" />
       <div className="background-orb background-orb-three" />
@@ -418,13 +431,11 @@ function App() {
       <div className="background-orb background-orb-six" />
       <div className="background-orb background-orb-seven" />
 
-      {/* Header */}
       <header className="site-header">
         <a className="brand" href="#home">
           <div className="brand-icon">
             <AccessRouteLogo />
           </div>
-
           <span>
             Access<span>Route</span>
           </span>
@@ -441,21 +452,18 @@ function App() {
           >
             Home
           </a>
-
           <a
             href="#features"
             onClick={() => setMenuOpen(false)}
           >
             Features
           </a>
-
           <a
             href="#about"
             onClick={() => setMenuOpen(false)}
           >
             About
           </a>
-
           <a
             href="#route-planner"
             onClick={() => setMenuOpen(false)}
@@ -469,8 +477,7 @@ function App() {
           className="header-button"
           onClick={scrollToPlanner}
         >
-          Plan a Route
-          <ArrowRight size={18} />
+          Plan a Route <ArrowRight size={18} />
         </button>
 
         <button
@@ -484,9 +491,7 @@ function App() {
         </button>
       </header>
 
-      {/* Main layout */}
       <main className="main-layout">
-        {/* Left hero */}
         <section className="hero-panel">
           <div className="hero-content">
             <div className="eyebrow">
@@ -508,7 +513,6 @@ function App() {
               with you.
             </p>
 
-            {/* Accessibility features */}
             <div id="features" className="hero-features">
               <div className="hero-feature">
                 <div className="feature-icon">
@@ -546,7 +550,6 @@ function App() {
               </div>
             </div>
 
-            {/* Tagline card */}
             <div id="about" className="hero-note">
               <div className="hero-note-icon">
                 <Route size={24} strokeWidth={1.8} />
@@ -565,7 +568,6 @@ function App() {
           </div>
         </section>
 
-        {/* Right route planner */}
         <section
           id="route-planner"
           className="planner-section"
@@ -591,7 +593,6 @@ function App() {
               </div>
             </div>
 
-            {/* Location inputs */}
             <div className="location-fields">
               <LocationSearchField
                 type="start"
@@ -632,7 +633,6 @@ function App() {
               />
             </div>
 
-            {/* Preferences */}
             <div className="preferences-heading">
               <div>
                 <h3>
@@ -660,7 +660,9 @@ function App() {
                     className={`preference-option ${
                       selected ? 'selected' : ''
                     }`}
-                    onClick={() => togglePreference(preference.id)}
+                    onClick={() =>
+                      togglePreference(preference.id)
+                    }
                     aria-pressed={selected}
                   >
                     <Icon size={26} strokeWidth={1.8} />
@@ -677,13 +679,15 @@ function App() {
               })}
             </div>
 
-            {/* Find route */}
             <button
               type="button"
               className="find-route-button"
               onClick={handleFindRoute}
+              disabled={isRouting}
             >
-              Find Accessible Route
+              {isRouting
+                ? 'Calculating Route...'
+                : 'Find Accessible Route'}
               <ArrowRight size={21} />
             </button>
 
@@ -693,20 +697,103 @@ function App() {
               </p>
             )}
 
-            {/* Interactive leaflet map */}
+            {route && (
+              <div
+                className="route-summary"
+                role="status"
+                style={{
+                  marginTop: '16px',
+                  marginBottom: '16px',
+                  padding: '16px',
+                  borderRadius: '14px',
+                  background: 'rgba(134,231,177,0.09)',
+                  border: '1px solid rgba(134,231,177,0.25)',
+                  color: '#e8f8ee',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    marginBottom: '12px',
+                  }}
+                >
+                  <Route size={20} color="#86e7b1" />
+                  <strong>
+                    {route.profile === 'wheelchair'
+                    ?'Wheelchair-Profile Route Found'
+                    : 'Walking Route Found'}
+                    </strong>
+                </div>
+
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: '24px',
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        fontSize: '12px',
+                        color: '#a7c3b2',
+                      }}
+                    >
+                      Distance
+                    </div>
+                    <strong>
+                      {route.distanceKm.toFixed(2)} km
+                    </strong>
+                  </div>
+
+                  <div>
+                    <div
+                      style={{
+                        fontSize: '12px',
+                        color: '#a7c3b2',
+                      }}
+                    >
+                      Estimated walking time
+                    </div>
+                    <strong>
+                      {Math.ceil(route.durationMinutes)} min
+                    </strong>
+                  </div>
+                </div>
+
+                <p
+                  style={{
+                    fontSize: '12px',
+                    color: '#a7c3b2',
+                    marginTop: '12px',
+                    marginBottom: 0,
+                  }}
+                >
+                  {route.profile === 'wheelchair'
+                  ? 'Calculated using the wheelchair routing profile. Accessibility depends on available map data and has not been independantly verified'
+                  : 'Calculated using standard pedestrian routing profile'}
+                  </p>
+              </div>
+            )}
+
             <div className="map-preview">
               <AccessMap
                 startCoordinates={startCoordinates}
                 destinationCoordinates={destinationCoordinates}
                 startName={startLocation}
                 destinationName={destination}
+                route={route}
               />
 
               <div className="map-overlay-label">
                 <span className="map-overlay-dot" />
-                {startCoordinates || destinationCoordinates
-                  ? 'SELECTED LOCATIONS'
-                  : 'MELBOURNE MAP PREVIEW'}
+                {route
+                  ? 'WALKING ROUTE'
+                  : startCoordinates || destinationCoordinates
+                    ? 'SELECTED LOCATIONS'
+                    : 'MELBOURNE MAP PREVIEW'}
               </div>
             </div>
 
